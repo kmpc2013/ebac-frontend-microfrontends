@@ -1,0 +1,19 @@
+.header { padding: 1rem; background: #1f1d1a; color: #fff; }
+.header h1 { margin: 0; font-size: 1.25rem; }
+
+/* Mobile: uma coluna (cardápio, depois pedido) */
+.layout {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Desktop: cardápio à esquerda, pedido fixo à direita */
+@media (min-width: 900px) {
+  .layout { grid-template-columns: 1fr 340px; align-items: start; }
+  .lateral { position: sticky; top: 1rem; }
+}
+
+.carregando { color: #666; }
