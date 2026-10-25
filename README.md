@@ -57,6 +57,20 @@ npm run build
 npm start
 ```
 
+### Deploy no GitHub Pages
+
+O workflow `.github/workflows/deploy-pages.yml` roda a cada push na `main` (ou manualmente em *Actions*). Ele exporta os três apps como sites estáticos (`output: 'export'`, ativado pela variável `STATIC_EXPORT`) e publica:
+
+| URL | App |
+| --- | --- |
+| `https://<usuario>.github.io/<repo>/` | Container |
+| `https://<usuario>.github.io/<repo>/cardapio/` | Cardápio |
+| `https://<usuario>.github.io/<repo>/pedido/` | Pedido |
+
+Variáveis usadas no build: `BASE_PATH` (subpasta de cada app) e, no container, `CARDAPIO_URL` / `PEDIDO_URL` (endereço dos remotes). Sem elas, tudo continua apontando para `localhost`.
+
+Configuração única no repositório: **Settings → Pages → Source: GitHub Actions**.
+
 ## Como funciona a comunicação entre os micros
 
 Os micros **não importam código um do outro**. Eles se comunicam por um evento global do navegador, seguindo um contrato definido em `events/pedidoEvents.js` (o mesmo arquivo nos dois micros):
