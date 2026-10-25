@@ -1,0 +1,40 @@
+.cardapio { width: 100%; }
+.titulo { margin: 0 0 1rem; font-size: 1.5rem; }
+
+/* Grid responsivo: 1 coluna no celular, quantas couberem em telas maiores */
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #e2ddd5;
+  border-radius: 12px;
+  background: #fff;
+}
+.nome { margin: 0; font-size: 1.1rem; }
+.descricao { margin: 0; color: #666; font-size: 0.95rem; flex: 1; }
+.rodape { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+.preco { font-weight: 700; }
+
+.botao {
+  min-height: 44px; /* área de toque confortável no celular */
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: #b4441f;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.botao:hover { background: #8f3418; }
+.botao:focus-visible { outline: 3px solid #f2a283; outline-offset: 2px; }
