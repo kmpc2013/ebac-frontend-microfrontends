@@ -1,0 +1,19 @@
+{
+  "name": "ebac-microfrontends",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n cardapio,pedido,container -c yellow,cyan,magenta \"npm run dev -w cardapio\" \"npm run dev -w pedido\" \"npm run dev -w container\"",
+    "build": "npm run build -w cardapio && npm run build -w pedido && npm run build -w container",
+    "start": "concurrently -n cardapio,pedido,container -c yellow,cyan,magenta \"npm run start -w cardapio\" \"npm run start -w pedido\" \"npm run start -w container\""
+  },
+  "devDependencies": {
+    "concurrently": "9.2.5"
+  },
+  "overrides": {
+    "webpack": "5.98.0",
+    "enhanced-resolve": "5.18.3"
+  }
+}

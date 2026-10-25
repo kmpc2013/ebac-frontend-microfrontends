@@ -1,0 +1,1208 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Micro Frontends na Prática</title>
+<style>
+  :root {
+    --bg: #f7f6f2; --surface: #ffffff; --surface-2: #f0eee8;
+    --text: #1f1d1a; --muted: #5f5a52; --border: #dedad1;
+    --accent: #b4441f; --accent-soft: #f6e3da;
+    --info: #1f5fa8; --info-soft: #e1ecf8;
+    --warn: #8a5a00; --warn-soft: #fbefd2;
+    --ok: #2e7d4f; --ok-soft: #dff1e6;
+    --code-bg: #24211d; --code-text: #f3efe6; --code-head: #34302b;
+    --radius: 10px;
+    --font: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+    --mono: "Cascadia Code", Consolas, "SFMono-Regular", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #161513; --surface: #1f1d1a; --surface-2: #2a2724;
+      --text: #ece8e1; --muted: #a8a197; --border: #3a3631;
+      --accent: #ec7a52; --accent-soft: #3b241b;
+      --info: #7fb2ec; --info-soft: #1a2a3d;
+      --warn: #e8b54d; --warn-soft: #382c14;
+      --ok: #6fcf97; --ok-soft: #173023;
+      --code-bg: #0f0e0d; --code-head: #26231f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #161513; --surface: #1f1d1a; --surface-2: #2a2724;
+    --text: #ece8e1; --muted: #a8a197; --border: #3a3631;
+    --accent: #ec7a52; --accent-soft: #3b241b;
+    --info: #7fb2ec; --info-soft: #1a2a3d;
+    --warn: #e8b54d; --warn-soft: #382c14;
+    --ok: #6fcf97; --ok-soft: #173023;
+    --code-bg: #0f0e0d; --code-head: #26231f;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 16.5px; line-height: 1.6; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 0 16px 80px; }
+
+  header.hero { padding: 44px 0 24px; border-bottom: 1px solid var(--border); margin-bottom: 28px; }
+  .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(28px, 5vw, 38px); line-height: 1.15; margin: 8px 0 12px; }
+  h2 { font-size: 25px; margin: 52px 0 10px; padding-top: 10px; border-top: 1px solid var(--border); scroll-margin-top: 12px; }
+  h2 .num { color: var(--accent); margin-right: 8px; }
+  h3 { font-size: 18px; margin: 26px 0 6px; }
+  p { margin: 0 0 12px; }
+  .lead { font-size: 18px; color: var(--muted); }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .pill { font-size: 14px; padding: 4px 12px; border-radius: 999px; background: var(--surface-2); color: var(--muted); border: 1px solid var(--border); }
+
+  nav.toc { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 20px; margin-bottom: 20px; }
+  nav.toc ol { margin: 6px 0 0; padding-left: 22px; columns: 2; column-gap: 32px; }
+  nav.toc a { color: var(--text); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); text-decoration: underline; }
+  @media (max-width: 640px) { nav.toc ol { columns: 1; } }
+
+  code { font-family: var(--mono); font-size: .88em; background: var(--surface-2); padding: 1px 6px; border-radius: 5px; }
+  pre { margin: 0; background: var(--code-bg); color: var(--code-text); padding: 14px 16px; overflow-x: auto; font-size: 14px; line-height: 1.55; }
+  pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+
+  .file { margin: 14px 0 6px; border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  .file-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--code-head); color: #e9e4da; padding: 6px 8px 6px 14px; font: 13px var(--mono); }
+  .file-head .tag { color: #c9a77a; margin-right: 6px; }
+  .copy { font: 600 12.5px var(--font); color: #fff; background: transparent; border: 1px solid #6b655c; border-radius: 6px; padding: 4px 10px; cursor: pointer; flex-shrink: 0; }
+  .copy:hover { background: #4a453f; }
+  .copy.done { border-color: #6fcf97; color: #6fcf97; }
+  .note { font-size: 14.5px; color: var(--muted); margin: 6px 2px 16px; }
+  .note b { color: var(--text); }
+
+  .callout { border-radius: var(--radius); padding: 12px 16px; margin: 16px 0; border-left: 4px solid; }
+  .callout strong:first-child { display: block; margin-bottom: 2px; }
+  .callout p:last-child, .callout ul:last-child { margin-bottom: 0; }
+  .info { background: var(--info-soft); border-color: var(--info); }
+  .warn { background: var(--warn-soft); border-color: var(--warn); }
+  .tip { background: var(--ok-soft); border-color: var(--ok); }
+
+  .table-wrap { overflow-x: auto; margin: 14px 0; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--surface); border: 1px solid var(--border); }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--surface-2); font-size: 13.5px; }
+  tr:last-child td { border-bottom: none; }
+
+  figure { margin: 18px 0; }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { font-size: 14px; color: var(--muted); margin-top: 6px; text-align: center; }
+  .svg-host { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 2; }
+  .svg-remote { fill: var(--info-soft); stroke: var(--info); stroke-width: 2; }
+  .svg-win { fill: var(--ok-soft); stroke: var(--ok); stroke-width: 2; stroke-dasharray: 6 4; }
+  .svg-t { fill: var(--text); font: 600 15px var(--font); }
+  .svg-s { fill: var(--muted); font: 13px var(--font); }
+  .svg-line { stroke: var(--muted); stroke-width: 2; fill: none; }
+  .svg-ev { stroke: var(--ok); stroke-width: 2.5; fill: none; }
+  .svg-arrow { fill: var(--muted); }
+  .svg-arrow-ok { fill: var(--ok); }
+
+  .checklist { list-style: none; padding: 0; }
+  .checklist li { margin: 6px 0; }
+  .checklist label { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
+  .checklist input { width: 19px; height: 19px; margin-top: 3px; accent-color: var(--ok); flex-shrink: 0; }
+  .checklist input:checked + span { color: var(--muted); text-decoration: line-through; }
+  .progress { font-size: 14px; color: var(--muted); }
+
+  a { color: var(--info); }
+  kbd { font: 13px var(--mono); border: 1px solid var(--border); border-bottom-width: 2px; border-radius: 4px; padding: 0 5px; background: var(--surface); }
+  footer { margin-top: 52px; color: var(--muted); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <div class="eyebrow">EBAC · Micro Frontends · Aula prática</div>
+  <h1>Do zero à entrega: sistema de pedidos com Micro Frontends</h1>
+  <p class="lead">Passo a passo para construir as três aplicações, integrá-las com Module Federation, fazê-las conversar e publicar no GitHub.</p>
+  <div class="meta">
+    <span class="pill">⏱ 4 a 6 horas</span>
+    <span class="pill">Next.js 14 · Pages Router</span>
+    <span class="pill">✅ Código testado em build e no navegador</span>
+  </div>
+</header>
+
+<nav class="toc" aria-label="Sumário">
+  <strong>Roteiro</strong>
+  <ol>
+    <li><a href="#visao">Visão geral da tecnologia</a></li>
+    <li><a href="#estrutura">Estrutura final</a></li>
+    <li><a href="#p1">Raiz do monorepo</a></li>
+    <li><a href="#p2">package.json dos apps</a></li>
+    <li><a href="#p3">Micro Cardápio</a></li>
+    <li><a href="#p4">Micro Pedido</a></li>
+    <li><a href="#p5">Module Federation nos micros</a></li>
+    <li><a href="#p6">Container App</a></li>
+    <li><a href="#p7">Rodar e testar</a></li>
+    <li><a href="#p8">Build de produção</a></li>
+    <li><a href="#p9">README.md</a></li>
+    <li><a href="#p10">Publicar no GitHub</a></li>
+    <li><a href="#problemas">Problemas comuns</a></li>
+    <li><a href="#checklist">Checklist final</a></li>
+  </ol>
+</nav>
+
+<div class="callout info">
+  <strong>Como usar esta aula</strong>
+  <p>Siga na ordem. Cada bloco de código mostra o <b>caminho do arquivo</b> no cabeçalho e tem um botão <b>Copiar</b>. Todos os comandos são executados na <b>raiz do projeto</b> (a pasta <code>ebac-frontend-microfrontends</code>), no PowerShell ou no terminal do VS Code.</p>
+  <p><b>Dica:</b> no VS Code, ao criar um arquivo digitando o caminho completo (ex.: <code>apps/cardapio/data/pratos.js</code>), as pastas são criadas automaticamente.</p>
+</div>
+
+<!-- ============ VISÃO GERAL ============ -->
+<h2 id="visao"><span class="num">1</span>Visão geral da tecnologia</h2>
+
+<h3>O que são Micro Frontends</h3>
+<p>É dividir um frontend grande em aplicações menores e independentes, cada uma podendo ser desenvolvida, testada e publicada por um time diferente. Uma aplicação principal, o <b>container</b> (ou <i>host</i>), junta as partes numa tela só.</p>
+
+<h3>Por que usar Module Federation</h3>
+<p>O Module Federation (recurso do Webpack 5) permite que uma aplicação <b>importe componentes de outra aplicação em tempo de execução</b>, pela rede, como se fossem locais. Isso garante o principal benefício dos micro frontends: <b>publicar um micro não exige recompilar o container</b>. Também permite compartilhar bibliotecas (como o React) para que o usuário não baixe a mesma coisa três vezes.</p>
+
+<h3>Como funciona</h3>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Conceito</th><th>O que é</th><th>No projeto</th></tr></thead>
+  <tbody>
+    <tr><td><b>Remote</b></td><td>App que <i>oferece</i> componentes</td><td><code>cardapio</code> (3001) e <code>pedido</code> (3002)</td></tr>
+    <tr><td><b>Host</b></td><td>App que <i>consome</i> componentes</td><td><code>container</code> (3000)</td></tr>
+    <tr><td><code>exposes</code></td><td>O que o remote disponibiliza</td><td><code>./Cardapio</code>, <code>./Pedido</code></td></tr>
+    <tr><td><code>remotes</code></td><td>Onde o host encontra cada remote</td><td><code>cardapio@http://localhost:3001/...</code></td></tr>
+    <tr><td><code>remoteEntry.js</code></td><td>Arquivo "índice" que cada remote publica, listando o que expõe</td><td>Baixado pelo container ao abrir a página</td></tr>
+    <tr><td><code>shared</code></td><td>Bibliotecas compartilhadas, sem duplicar</td><td>React e React DOM em cópia única (o plugin já faz isso)</td></tr>
+  </tbody>
+</table>
+</div>
+
+<figure>
+<svg viewBox="0 0 760 250" role="img" aria-labelledby="arq-t">
+  <title id="arq-t">Arquitetura: container consome cardápio e pedido; cardápio fala com pedido por evento no window</title>
+  <defs>
+    <marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="svg-arrow" d="M0,0 L10,5 L0,10 z"></path></marker>
+    <marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="svg-arrow-ok" d="M0,0 L10,5 L0,10 z"></path></marker>
+  </defs>
+  <rect class="svg-host" x="270" y="10" width="220" height="64" rx="10"></rect>
+  <text class="svg-t" x="380" y="38" text-anchor="middle">Container (host)</text>
+  <text class="svg-s" x="380" y="58" text-anchor="middle">localhost:3000 · React.lazy + Suspense</text>
+
+  <rect class="svg-remote" x="20" y="160" width="210" height="64" rx="10"></rect>
+  <text class="svg-t" x="125" y="188" text-anchor="middle">Micro Cardápio</text>
+  <text class="svg-s" x="125" y="208" text-anchor="middle">remote · :3001 · emite evento</text>
+
+  <rect class="svg-remote" x="530" y="160" width="210" height="64" rx="10"></rect>
+  <text class="svg-t" x="635" y="188" text-anchor="middle">Micro Pedido</text>
+  <text class="svg-s" x="635" y="208" text-anchor="middle">remote · :3002 · escuta evento</text>
+
+  <rect class="svg-win" x="300" y="164" width="160" height="56" rx="10"></rect>
+  <text class="svg-t" x="380" y="190" text-anchor="middle">window</text>
+  <text class="svg-s" x="380" y="208" text-anchor="middle">CustomEvent</text>
+
+  <path class="svg-line" d="M300 74 L150 158" marker-end="url(#a1)"></path>
+  <path class="svg-line" d="M460 74 L610 158" marker-end="url(#a1)"></path>
+  <text class="svg-s" x="185" y="110">importa cardapio/Cardapio</text>
+  <text class="svg-s" x="470" y="110">importa pedido/Pedido</text>
+  <line class="svg-ev" x1="230" y1="192" x2="297" y2="192" marker-end="url(#a2)"></line>
+  <line class="svg-ev" x1="460" y1="192" x2="527" y2="192" marker-end="url(#a2)"></line>
+</svg>
+<figcaption>Os micros não se importam entre si. O único acordo entre eles é o nome do evento e o formato dos dados.</figcaption>
+</figure>
+
+<h3>Comunicação entre os micros</h3>
+<p>Quando o usuário clica em "Adicionar ao pedido", o Cardápio dispara um <code>CustomEvent</code> chamado <code>pedido:item-adicionado</code> no <code>window</code>, levando <code>{ id, nome, preco }</code>. O Pedido escuta esse evento e atualiza a lista. Como nenhum micro conhece o outro, cada um continua independente.</p>
+
+<div class="callout warn">
+  <strong>Por que Next 14 com Pages Router</strong>
+  <p>O plugin <code>@module-federation/nextjs-mf</code> só suporta Next.js 12 a 15 com <b>Pages Router</b> (pasta <code>pages/</code>). App Router e Next 16 não funcionam. As versões desta aula são fixas e foram testadas juntas: não troque por versões mais novas.</p>
+</div>
+
+<!-- ============ ESTRUTURA ============ -->
+<h2 id="estrutura"><span class="num">2</span>Estrutura final</h2>
+<p>É isso que você terá ao final. Use como mapa.</p>
+<div class="file" data-path="estrutura do projeto" data-lang="text"><script type="text/plain">
+ebac-frontend-microfrontends/
+├── package.json            ← monorepo (workspaces, scripts, versões travadas)
+├── .gitignore
+├── README.md
+├── docs/                   ← material de estudo (já existe)
+└── apps/
+    ├── cardapio/           ← remote · porta 3001
+    │   ├── package.json
+    │   ├── next.config.js  ← expõe ./Cardapio
+    │   ├── components/     ← Cardapio.jsx, PratoCard.jsx, Cardapio.module.css
+    │   ├── data/           ← pratos.js
+    │   ├── events/         ← pedidoEvents.js (contrato)
+    │   ├── pages/          ← _app.js, index.js (roda sozinho)
+    │   └── styles/         ← globals.css
+    ├── pedido/             ← remote · porta 3002
+    │   ├── package.json
+    │   ├── next.config.js  ← expõe ./Pedido
+    │   ├── components/     ← Pedido.jsx, Pedido.module.css
+    │   ├── hooks/          ← usePedido.js
+    │   ├── events/         ← pedidoEvents.js (mesmo contrato)
+    │   ├── pages/          ← _app.js, index.js (com simulador)
+    │   └── styles/         ← globals.css
+    └── container/          ← host · porta 3000
+        ├── package.json
+        ├── next.config.js  ← consome cardapio e pedido
+        ├── components/     ← MicroBoundary.jsx
+        ├── pages/          ← _app.js, index.js
+        └── styles/         ← globals.css, Home.module.css
+</script></div>
+
+<!-- ============ PASSO 1 ============ -->
+<h2 id="p1"><span class="num">3</span>Raiz do monorepo</h2>
+<p>Confira se o Node.js está instalado (versão 18.17 ou superior):</p>
+<div class="file" data-path="terminal" data-lang="sh"><script type="text/plain">
+node -v
+npm -v
+</script></div>
+
+<div class="file" data-path="package.json"><script type="text/plain">
+{
+  "name": "ebac-microfrontends",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n cardapio,pedido,container -c yellow,cyan,magenta \"npm run dev -w cardapio\" \"npm run dev -w pedido\" \"npm run dev -w container\"",
+    "build": "npm run build -w cardapio && npm run build -w pedido && npm run build -w container",
+    "start": "concurrently -n cardapio,pedido,container -c yellow,cyan,magenta \"npm run start -w cardapio\" \"npm run start -w pedido\" \"npm run start -w container\""
+  },
+  "devDependencies": {
+    "concurrently": "9.2.5"
+  },
+  "overrides": {
+    "webpack": "5.98.0",
+    "enhanced-resolve": "5.18.3"
+  }
+}
+</script></div>
+<ul class="note">
+  <li><b>workspaces:</b> transforma a raiz num monorepo. Cada pasta em <code>apps/</code> é um projeto, mas o <code>npm install</code> roda uma vez só, na raiz.</li>
+  <li><b>scripts:</b> <code>npm run dev</code> sobe os três apps juntos com o <code>concurrently</code>; <code>-w cardapio</code> roda o script dentro daquele app.</li>
+  <li><b>overrides:</b> trava o webpack e o enhanced-resolve em versões compatíveis. Versões mais novas quebram o plugin (veja <a href="#problemas">Problemas comuns</a>).</li>
+</ul>
+
+<div class="file" data-path=".gitignore"><script type="text/plain">
+node_modules/
+.next/
+out/
+*.log
+.env*.local
+.DS_Store
+</script></div>
+<p class="note">Impede que dependências e arquivos gerados pelo build subam para o GitHub.</p>
+
+<!-- ============ PASSO 2 ============ -->
+<h2 id="p2"><span class="num">4</span>package.json dos três apps</h2>
+<p>Os três são iguais, mudam apenas o <code>name</code> e a porta.</p>
+
+<div class="file" data-path="apps/cardapio/package.json"><script type="text/plain">
+{
+  "name": "cardapio",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next dev -p 3001",
+    "build": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next build",
+    "start": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next start -p 3001"
+  },
+  "dependencies": {
+    "@module-federation/nextjs-mf": "8.8.76",
+    "cross-env": "7.0.3",
+    "next": "14.2.35",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "webpack": "5.98.0"
+  }
+}
+</script></div>
+
+<div class="file" data-path="apps/pedido/package.json"><script type="text/plain">
+{
+  "name": "pedido",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next dev -p 3002",
+    "build": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next build",
+    "start": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next start -p 3002"
+  },
+  "dependencies": {
+    "@module-federation/nextjs-mf": "8.8.76",
+    "cross-env": "7.0.3",
+    "next": "14.2.35",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "webpack": "5.98.0"
+  }
+}
+</script></div>
+
+<div class="file" data-path="apps/container/package.json"><script type="text/plain">
+{
+  "name": "container",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next dev -p 3000",
+    "build": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next build",
+    "start": "cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true next start -p 3000"
+  },
+  "dependencies": {
+    "@module-federation/nextjs-mf": "8.8.76",
+    "cross-env": "7.0.3",
+    "next": "14.2.35",
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "webpack": "5.98.0"
+  }
+}
+</script></div>
+<ul class="note">
+  <li><b>NEXT_PRIVATE_LOCAL_WEBPACK=true:</b> obriga o Next a usar o webpack instalado no projeto, em vez da cópia interna dele. O plugin de federação precisa disso.</li>
+  <li><b>cross-env:</b> permite definir a variável de ambiente do mesmo jeito no Windows, Mac e Linux.</li>
+  <li><b>-p 3001:</b> porta de cada app.</li>
+  <li><b>Versões sem <code>^</code>:</b> instalam exatamente a versão testada.</li>
+</ul>
+
+<p>Instale tudo (na raiz):</p>
+<div class="file" data-path="terminal" data-lang="sh"><script type="text/plain">
+npm install
+</script></div>
+<p class="note">Cria uma única pasta <code>node_modules</code> na raiz e o <code>package-lock.json</code>. Pode aparecer um aviso de que o <code>nextjs-mf</code> será descontinuado: é esperado, ignore.</p>
+
+<!-- ============ PASSO 3 ============ -->
+<h2 id="p3"><span class="num">5</span>Micro Cardápio</h2>
+
+<div class="file" data-path="apps/cardapio/data/pratos.js"><script type="text/plain">
+// Lista estática de pratos (não há banco de dados neste projeto).
+export const pratos = [
+  { id: 'lasanha', nome: 'Lasanha à bolonhesa', descricao: 'Massa fresca, molho de tomate e queijo gratinado.', preco: 39.9 },
+  { id: 'risoto', nome: 'Risoto de cogumelos', descricao: 'Arroz arbóreo, shiitake, parmesão e manteiga.', preco: 44.5 },
+  { id: 'salmao', nome: 'Salmão grelhado', descricao: 'Acompanha legumes salteados e purê de batata.', preco: 58.0 },
+  { id: 'hamburguer', nome: 'Hambúrguer artesanal', descricao: 'Blend 180 g, cheddar e cebola caramelizada.', preco: 34.9 },
+  { id: 'salada', nome: 'Salada Caesar', descricao: 'Alface romana, croutons, parmesão e molho caesar.', preco: 27.0 },
+  { id: 'petit', nome: 'Petit gâteau', descricao: 'Bolo de chocolate com sorvete de creme.', preco: 22.0 },
+];
+</script></div>
+<p class="note">Os dados do cardápio. O <code>id</code> identifica cada prato de forma única (usado como <code>key</code> e para agrupar no pedido).</p>
+
+<div class="file" data-path="apps/cardapio/events/pedidoEvents.js"><script type="text/plain">
+// Contrato de comunicação entre micros.
+// Deve ser idêntico em apps/cardapio e apps/pedido.
+export const ITEM_ADICIONADO = 'pedido:item-adicionado';
+
+/**
+ * Avisa a página que um prato foi adicionado ao pedido.
+ * @param {{ id: string, nome: string, preco: number }} item
+ */
+export function emitirItemAdicionado(item) {
+  if (typeof window === 'undefined') return; // proteção para o SSR do Next
+  window.dispatchEvent(new CustomEvent(ITEM_ADICIONADO, { detail: item }));
+}
+</script></div>
+<p class="note">O <b>contrato</b>: nome do evento e função que o dispara. <code>CustomEvent</code> carrega os dados em <code>detail</code>; <code>window.dispatchEvent</code> "anuncia" para quem estiver escutando. O <code>typeof window</code> evita erro quando o Next renderiza no servidor, onde não existe <code>window</code>.</p>
+
+<div class="file" data-path="apps/cardapio/components/PratoCard.jsx"><script type="text/plain">
+import styles from './Cardapio.module.css';
+
+const moeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+// Card de um prato. Não conhece eventos: só avisa o pai via onAdicionar.
+export default function PratoCard({ prato, onAdicionar }) {
+  return (
+    <article className={styles.card}>
+      <h3 className={styles.nome}>{prato.nome}</h3>
+      <p className={styles.descricao}>{prato.descricao}</p>
+      <div className={styles.rodape}>
+        <span className={styles.preco}>{moeda.format(prato.preco)}</span>
+        <button type="button" className={styles.botao} onClick={onAdicionar}>
+          Adicionar ao pedido
+        </button>
+      </div>
+    </article>
+  );
+}
+</script></div>
+<p class="note">Componente visual de um prato. <code>Intl.NumberFormat</code> formata o preço como <code>R$ 39,90</code>.</p>
+
+<div class="file" data-path="apps/cardapio/components/Cardapio.jsx"><script type="text/plain">
+import { pratos } from '../data/pratos';
+import { emitirItemAdicionado } from '../events/pedidoEvents';
+import PratoCard from './PratoCard';
+import styles from './Cardapio.module.css';
+
+// Componente exposto via Module Federation (./Cardapio).
+export default function Cardapio() {
+  return (
+    <section className={styles.cardapio} aria-labelledby="titulo-cardapio">
+      <h2 id="titulo-cardapio" className={styles.titulo}>Cardápio</h2>
+      <ul className={styles.lista}>
+        {pratos.map((prato) => (
+          <li key={prato.id}>
+            <PratoCard
+              prato={prato}
+              onAdicionar={() =>
+                emitirItemAdicionado({ id: prato.id, nome: prato.nome, preco: prato.preco })
+              }
+            />
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+</script></div>
+<p class="note">Componente principal do micro: é <b>ele</b> que será exposto ao container. Envia só <code>id</code>, <code>nome</code> e <code>preco</code>, conforme o contrato.</p>
+
+<div class="file" data-path="apps/cardapio/components/Cardapio.module.css"><script type="text/plain">
+.cardapio { width: 100%; }
+.titulo { margin: 0 0 1rem; font-size: 1.5rem; }
+
+/* Grid responsivo: 1 coluna no celular, quantas couberem em telas maiores */
+.lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.card {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid #e2ddd5;
+  border-radius: 12px;
+  background: #fff;
+}
+.nome { margin: 0; font-size: 1.1rem; }
+.descricao { margin: 0; color: #666; font-size: 0.95rem; flex: 1; }
+.rodape { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; flex-wrap: wrap; }
+.preco { font-weight: 700; }
+
+.botao {
+  min-height: 44px; /* área de toque confortável no celular */
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 8px;
+  background: #b4441f;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.botao:hover { background: #8f3418; }
+.botao:focus-visible { outline: 3px solid #f2a283; outline-offset: 2px; }
+</script></div>
+<p class="note"><b>CSS Modules</b> (<code>.module.css</code>): as classes ganham nomes únicos, então o estilo de um micro nunca vaza para o outro. <code>repeat(auto-fill, minmax(240px, 1fr))</code> faz o grid se adaptar sozinho à largura da tela.</p>
+
+<div class="file" data-path="apps/cardapio/styles/globals.css"><script type="text/plain">
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #f7f6f2; color: #1f1d1a; }
+button { font: inherit; }
+</script></div>
+
+<div class="file" data-path="apps/cardapio/pages/_app.js"><script type="text/plain">
+import '../styles/globals.css';
+
+export default function App({ Component, pageProps }) {
+  return <Component {...pageProps} />;
+}
+</script></div>
+<p class="note"><code>_app.js</code> envolve todas as páginas do Pages Router; é o único lugar onde o Next permite importar CSS global.</p>
+
+<div class="file" data-path="apps/cardapio/pages/index.js"><script type="text/plain">
+import { useEffect } from 'react';
+import Cardapio from '../components/Cardapio';
+import { ITEM_ADICIONADO } from '../events/pedidoEvents';
+
+// Página para rodar o micro sozinho (http://localhost:3001).
+export default function Home() {
+  // Só para teste isolado: mostra no console os eventos emitidos
+  useEffect(() => {
+    const log = (e) => console.log('[cardapio] evento emitido:', e.detail);
+    window.addEventListener(ITEM_ADICIONADO, log);
+    return () => window.removeEventListener(ITEM_ADICIONADO, log);
+  }, []);
+
+  return (
+    <main style={{ padding: '1rem', maxWidth: 1100, margin: '0 auto' }}>
+      <Cardapio />
+    </main>
+  );
+}
+</script></div>
+<p class="note">Página para testar o micro <b>sozinho</b>. Ela não é exposta ao container. O <code>useEffect</code> só loga os eventos para você conferir no console.</p>
+
+<h3>Testar o Cardápio isolado</h3>
+<div class="file" data-path="terminal" data-lang="sh"><script type="text/plain">
+npm run dev -w cardapio
+</script></div>
+<p class="note">Abra <a href="http://localhost:3001" target="_blank" rel="noopener">localhost:3001</a>, pressione <kbd>F12</kbd> → Console e clique em "Adicionar ao pedido". Deve aparecer <code>[cardapio] evento emitido: {id: 'lasanha', ...}</code>. Pare com <kbd>Ctrl</kbd>+<kbd>C</kbd>.</p>
+
+<!-- ============ PASSO 4 ============ -->
+<h2 id="p4"><span class="num">6</span>Micro Pedido</h2>
+
+<div class="file" data-path="apps/pedido/events/pedidoEvents.js"><script type="text/plain">
+// Contrato de comunicação entre micros.
+// Deve ser idêntico em apps/cardapio e apps/pedido.
+export const ITEM_ADICIONADO = 'pedido:item-adicionado';
+
+/**
+ * Avisa a página que um prato foi adicionado ao pedido.
+ * @param {{ id: string, nome: string, preco: number }} item
+ */
+export function emitirItemAdicionado(item) {
+  if (typeof window === 'undefined') return; // proteção para o SSR do Next
+  window.dispatchEvent(new CustomEvent(ITEM_ADICIONADO, { detail: item }));
+}
+</script></div>
+<p class="note">Cópia exata do contrato do Cardápio. A duplicação é proposital: assim nenhum micro depende do código do outro.</p>
+
+<div class="file" data-path="apps/pedido/hooks/usePedido.js"><script type="text/plain">
+import { useEffect, useState } from 'react';
+import { ITEM_ADICIONADO } from '../events/pedidoEvents';
+
+// Guarda os itens do pedido e escuta os eventos vindos do Cardápio.
+export function usePedido() {
+  const [itens, setItens] = useState([]);
+
+  useEffect(() => {
+    function aoAdicionar(evento) {
+      const item = evento.detail;
+      if (!item?.id) return; // ignora eventos fora do contrato
+
+      setItens((atuais) => {
+        const existente = atuais.find((i) => i.id === item.id);
+        if (existente) {
+          // mesmo prato: só aumenta a quantidade
+          return atuais.map((i) => (i.id === item.id ? { ...i, quantidade: i.quantidade + 1 } : i));
+        }
+        return [...atuais, { ...item, quantidade: 1 }];
+      });
+    }
+
+    window.addEventListener(ITEM_ADICIONADO, aoAdicionar);
+    // cleanup: sem isso o StrictMode registra 2 listeners e duplica os itens
+    return () => window.removeEventListener(ITEM_ADICIONADO, aoAdicionar);
+  }, []);
+
+  const remover = (id) => setItens((atuais) => atuais.filter((i) => i.id !== id));
+  const limpar = () => setItens([]);
+  const total = itens.reduce((soma, i) => soma + i.preco * i.quantidade, 0);
+
+  return { itens, total, remover, limpar };
+}
+</script></div>
+<ul class="note">
+  <li><b>addEventListener</b> dentro do <code>useEffect</code>: começa a escutar o evento quando o componente aparece na tela.</li>
+  <li><b>return () =&gt; removeEventListener</b>: para de escutar quando o componente sai. Sem isso, os itens seriam adicionados em dobro.</li>
+  <li><b>setItens((atuais) =&gt; ...)</b>: forma funcional, sempre trabalha com o estado mais recente.</li>
+  <li>Prato repetido aumenta a <code>quantidade</code> em vez de criar outra linha.</li>
+</ul>
+
+<div class="file" data-path="apps/pedido/components/Pedido.jsx"><script type="text/plain">
+import { usePedido } from '../hooks/usePedido';
+import styles from './Pedido.module.css';
+
+const moeda = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+// Componente exposto via Module Federation (./Pedido).
+export default function Pedido() {
+  const { itens, total, remover, limpar } = usePedido();
+
+  return (
+    <aside className={styles.pedido} aria-labelledby="titulo-pedido">
+      <h2 id="titulo-pedido" className={styles.titulo}>Seu pedido</h2>
+
+      {itens.length === 0 ? (
+        <p className={styles.vazio}>Nenhum item ainda. Escolha algo no cardápio.</p>
+      ) : (
+        <ul className={styles.lista}>
+          {itens.map((item) => (
+            <li key={item.id} className={styles.item}>
+              <span>{item.quantidade}× {item.nome}</span>
+              <span>{moeda.format(item.preco * item.quantidade)}</span>
+              <button
+                type="button"
+                className={styles.remover}
+                onClick={() => remover(item.id)}
+                aria-label={`Remover ${item.nome}`}
+              >
+                ✕
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <p className={styles.total} aria-live="polite">
+        Total: <strong>{moeda.format(total)}</strong>
+      </p>
+      {itens.length > 0 && (
+        <button type="button" className={styles.limpar} onClick={limpar}>
+          Limpar pedido
+        </button>
+      )}
+    </aside>
+  );
+}
+</script></div>
+<p class="note">Componente exposto ao container. <code>aria-live="polite"</code> faz leitores de tela anunciarem o total quando ele muda.</p>
+
+<div class="file" data-path="apps/pedido/components/Pedido.module.css"><script type="text/plain">
+.pedido {
+  padding: 1rem;
+  border: 1px solid #e2ddd5;
+  border-radius: 12px;
+  background: #fff;
+}
+.titulo { margin: 0 0 1rem; font-size: 1.5rem; }
+.vazio { color: #666; }
+.lista { list-style: none; margin: 0; padding: 0; }
+.item {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #eee;
+}
+.remover {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+}
+.total { margin: 1rem 0 0.5rem; font-size: 1.15rem; display: flex; justify-content: space-between; }
+.limpar {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid #b4441f;
+  border-radius: 8px;
+  background: transparent;
+  color: #b4441f;
+  font-weight: 600;
+  cursor: pointer;
+}
+.remover:focus-visible,
+.limpar:focus-visible { outline: 3px solid #f2a283; outline-offset: 2px; }
+</script></div>
+
+<p>Agora o CSS global e o <code>_app.js</code>, iguais aos do Cardápio:</p>
+<div class="file" data-path="apps/pedido/styles/globals.css"><script type="text/plain">
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #f7f6f2; color: #1f1d1a; }
+button { font: inherit; }
+</script></div>
+
+<div class="file" data-path="apps/pedido/pages/_app.js"><script type="text/plain">
+import '../styles/globals.css';
+
+export default function App({ Component, pageProps }) {
+  return <Component {...pageProps} />;
+}
+</script></div>
+
+<div class="file" data-path="apps/pedido/pages/index.js"><script type="text/plain">
+import Pedido from '../components/Pedido';
+import { emitirItemAdicionado } from '../events/pedidoEvents';
+
+// Página para rodar o micro sozinho (http://localhost:3002).
+// O botão simula o Cardápio, que não existe aqui.
+export default function Home() {
+  return (
+    <main style={{ padding: '1rem', maxWidth: 480, margin: '0 auto' }}>
+      <button
+        type="button"
+        onClick={() => emitirItemAdicionado({ id: 'teste', nome: 'Prato de teste', preco: 10 })}
+        style={{ marginBottom: '1rem', minHeight: 44 }}
+      >
+        Simular item adicionado
+      </button>
+      <Pedido />
+    </main>
+  );
+}
+</script></div>
+<p class="note">Página de teste isolado com um botão que <b>simula</b> o Cardápio disparando o evento.</p>
+
+<h3>Testar o Pedido isolado</h3>
+<div class="file" data-path="terminal" data-lang="sh"><script type="text/plain">
+npm run dev -w pedido
+</script></div>
+<p class="note">Abra <a href="http://localhost:3002" target="_blank" rel="noopener">localhost:3002</a> e clique em "Simular item adicionado" duas vezes: deve aparecer <b>2× Prato de teste · R$ 20,00</b> (uma linha só, nunca duplicada). Pare com <kbd>Ctrl</kbd>+<kbd>C</kbd>.</p>
+
+<!-- ============ PASSO 5 ============ -->
+<h2 id="p5"><span class="num">7</span>Module Federation nos micros</h2>
+<p>Agora transformamos os dois micros em <b>remotes</b>, expondo seus componentes principais.</p>
+
+<div class="file" data-path="apps/cardapio/next.config.js"><script type="text/plain">
+const { NextFederationPlugin } = require('@module-federation/nextjs-mf');
+
+/** @type {import('next').NextConfig} */
+module.exports = {
+  reactStrictMode: true,
+  webpack(config) {
+    config.plugins.push(
+      new NextFederationPlugin({
+        name: 'cardapio', // nome do remote: o container importa "cardapio/..."
+        filename: 'static/chunks/remoteEntry.js', // arquivo de entrada publicado por este micro
+        exposes: {
+          './Cardapio': './components/Cardapio.jsx', // o que outros apps podem importar
+        },
+        shared: {}, // react e react-dom já são compartilhados (singleton) pelo plugin
+        extraOptions: { exposePages: false },
+      })
+    );
+    return config;
+  },
+};
+</script></div>
+<ul class="note">
+  <li><b>webpack(config)</b>: o Next deixa você adicionar plugins ao webpack por aqui.</li>
+  <li><b>name</b>: identidade do remote. Precisa ser igual ao usado no container.</li>
+  <li><b>filename</b>: onde o <code>remoteEntry.js</code> será publicado.</li>
+  <li><b>exposes</b>: <code>'./Cardapio'</code> é o nome público; o valor é o arquivo real.</li>
+  <li><b>exposePages: false</b>: não expõe as páginas do Next, só o que você listou.</li>
+</ul>
+
+<div class="file" data-path="apps/pedido/next.config.js"><script type="text/plain">
+const { NextFederationPlugin } = require('@module-federation/nextjs-mf');
+
+/** @type {import('next').NextConfig} */
+module.exports = {
+  reactStrictMode: true,
+  webpack(config) {
+    config.plugins.push(
+      new NextFederationPlugin({
+        name: 'pedido', // nome do remote: o container importa "pedido/..."
+        filename: 'static/chunks/remoteEntry.js',
+        exposes: {
+          './Pedido': './components/Pedido.jsx',
+        },
+        shared: {},
+        extraOptions: { exposePages: false },
+      })
+    );
+    return config;
+  },
+};
+</script></div>
+
+<h3>Verificar se os remotes estão publicando</h3>
+<div class="file" data-path="terminal" data-lang="sh"><script type="text/plain">
+npm run dev -w cardapio
+</script></div>
+<p class="note">Abra primeiro <a href="http://localhost:3001" target="_blank" rel="noopener">localhost:3001</a> (em modo dev o Next só compila na primeira visita) e depois <a href="http://localhost:3001/_next/static/chunks/remoteEntry.js" target="_blank" rel="noopener">localhost:3001/_next/static/chunks/remoteEntry.js</a>. Se aparecer código JavaScript, o remote está funcionando. Repita com <code>-w pedido</code> na porta 3002.</p>
+
+<!-- ============ PASSO 6 ============ -->
+<h2 id="p6"><span class="num">8</span>Container App</h2>
+
+<div class="file" data-path="apps/container/next.config.js"><script type="text/plain">
+const { NextFederationPlugin } = require('@module-federation/nextjs-mf');
+
+// Endereço dos remotes. O Next gera um remoteEntry para o servidor (ssr) e outro para o navegador (chunks).
+function remotes(isServer) {
+  const pasta = isServer ? 'ssr' : 'chunks';
+  return {
+    cardapio: `cardapio@http://localhost:3001/_next/static/${pasta}/remoteEntry.js`,
+    pedido: `pedido@http://localhost:3002/_next/static/${pasta}/remoteEntry.js`,
+  };
+}
+
+/** @type {import('next').NextConfig} */
+module.exports = {
+  reactStrictMode: true,
+  webpack(config, options) {
+    config.plugins.push(
+      new NextFederationPlugin({
+        name: 'container',
+        filename: 'static/chunks/remoteEntry.js',
+        remotes: remotes(options.isServer),
+        shared: {},
+        extraOptions: { exposePages: false },
+      })
+    );
+    return config;
+  },
+};
+</script></div>
+<ul class="note">
+  <li><b>remotes</b>: formato <code>nome@url-do-remoteEntry</code>. A chave (<code>cardapio</code>) vira o prefixo do import: <code>import('cardapio/Cardapio')</code>.</li>
+  <li><b>options.isServer</b>: o Next compila duas vezes (servidor e navegador), e cada uma precisa do seu <code>remoteEntry.js</code>.</li>
+</ul>
+
+<div class="file" data-path="apps/container/components/MicroBoundary.jsx"><script type="text/plain">
+import { Component } from 'react';
+
+// Se um micro lançar erro ao renderizar, mostra um aviso em vez de quebrar a página inteira.
+// (Micro fora do ar: o próprio nextjs-mf renderiza vazio e loga "<micro> offline" no console.)
+export default class MicroBoundary extends Component {
+  state = { erro: false };
+
+  static getDerivedStateFromError() {
+    return { erro: true };
+  }
+
+  componentDidCatch(error) {
+    console.error(`[container] falha ao carregar ${this.props.nome}:`, error);
+  }
+
+  render() {
+    if (this.state.erro) {
+      return <p role="alert">Não foi possível exibir o {this.props.nome}.</p>;
+    }
+    return this.props.children;
+  }
+}
+</script></div>
+<p class="note"><b>Error Boundary</b>: isola falhas. Se um micro quebrar, só a área dele mostra o aviso; o resto da página continua funcionando. Precisa ser componente de classe (o React não tem hook para isso).</p>
+
+<div class="file" data-path="apps/container/styles/globals.css"><script type="text/plain">
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; background: #f7f6f2; color: #1f1d1a; }
+button { font: inherit; }
+</script></div>
+
+<div class="file" data-path="apps/container/styles/Home.module.css"><script type="text/plain">
+.header { padding: 1rem; background: #1f1d1a; color: #fff; }
+.header h1 { margin: 0; font-size: 1.25rem; }
+
+/* Mobile: uma coluna (cardápio, depois pedido) */
+.layout {
+  display: grid;
+  gap: 1.5rem;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Desktop: cardápio à esquerda, pedido fixo à direita */
+@media (min-width: 900px) {
+  .layout { grid-template-columns: 1fr 340px; align-items: start; }
+  .lateral { position: sticky; top: 1rem; }
+}
+
+.carregando { color: #666; }
+</script></div>
+<p class="note"><b>Mobile-first</b>: o padrão é uma coluna; a partir de 900px vira duas colunas, com o pedido "grudado" no topo (<code>position: sticky</code>) enquanto você rola o cardápio.</p>
+
+<div class="file" data-path="apps/container/pages/_app.js"><script type="text/plain">
+import '../styles/globals.css';
+
+export default function App({ Component, pageProps }) {
+  return <Component {...pageProps} />;
+}
+</script></div>
+
+<div class="file" data-path="apps/container/pages/index.js"><script type="text/plain">
+import { lazy, Suspense, useEffect, useState } from 'react';
+import MicroBoundary from '../components/MicroBoundary';
+import styles from '../styles/Home.module.css';
+
+// Módulos remotos: "nomeDoRemote/móduloExposto"
+const Cardapio = lazy(() => import('cardapio/Cardapio'));
+const Pedido = lazy(() => import('pedido/Pedido'));
+
+export default function Home() {
+  // Os micros só são renderizados no navegador (evita erros de SSR/hidratação)
+  const [noNavegador, setNoNavegador] = useState(false);
+  useEffect(() => setNoNavegador(true), []);
+
+  return (
+    <>
+      <header className={styles.header}>
+        <h1>Restaurante EBAC</h1>
+      </header>
+
+      {noNavegador && (
+        <main className={styles.layout}>
+          <MicroBoundary nome="Cardápio">
+            <Suspense fallback={<p className={styles.carregando}>Carregando cardápio…</p>}>
+              <Cardapio />
+            </Suspense>
+          </MicroBoundary>
+
+          <div className={styles.lateral}>
+            <MicroBoundary nome="Pedido">
+              <Suspense fallback={<p className={styles.carregando}>Carregando pedido…</p>}>
+                <Pedido />
+              </Suspense>
+            </MicroBoundary>
+          </div>
+        </main>
+      )}
+    </>
+  );
+}
+</script></div>
+<ul class="note">
+  <li><b>lazy(() =&gt; import('cardapio/Cardapio'))</b>: carrega o componente do remote sob demanda, pela rede.</li>
+  <li><b>Suspense fallback</b>: o que aparece enquanto o código do micro está sendo baixado.</li>
+  <li><b>noNavegador</b>: o <code>useEffect</code> só roda no navegador, então os micros só são montados lá. Isso evita erros de hidratação do Pages Router com componentes remotos.</li>
+</ul>
+
+<!-- ============ PASSO 7 ============ -->
+<h2 id="p7"><span class="num">9</span>Rodar tudo e testar</h2>
+<div class="file" data-path="terminal" data-lang="sh"><script type="text/plain">
+npm run dev
+</script></div>
+<p class="note">Sobe os três apps ao mesmo tempo, com o nome de cada um colorido no início das linhas. Espere aparecer <code>✓ Ready</code> três vezes.</p>
+
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Teste</th><th>Onde</th><th>Resultado esperado</th></tr></thead>
+  <tbody>
+    <tr><td>Integração</td><td><a href="http://localhost:3000" target="_blank" rel="noopener">localhost:3000</a></td><td>Cardápio e "Seu pedido" aparecem lado a lado (desktop)</td></tr>
+    <tr><td>Comunicação</td><td>3000</td><td>2 cliques na Lasanha + 1 no Risoto → <b>2× Lasanha R$ 79,80</b>, <b>1× Risoto R$ 44,50</b>, total <b>R$ 124,30</b></td></tr>
+    <tr><td>Remover / limpar</td><td>3000</td><td>✕ remove a linha; "Limpar pedido" zera tudo</td></tr>
+    <tr><td>Remotes carregados</td><td>3000 → F12 → Network</td><td>Aparecem dois <code>remoteEntry.js</code> (portas 3001 e 3002)</td></tr>
+    <tr><td>Responsivo</td><td>3000 → F12 → <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>M</kbd></td><td>Em 375px: uma coluna, sem rolagem horizontal</td></tr>
+    <tr><td>Micros isolados</td><td>3001 e 3002</td><td>Continuam funcionando sozinhos</td></tr>
+    <tr><td>Resiliência</td><td>Feche só o pedido e recarregue 3000</td><td>O Cardápio continua funcionando; console mostra <code>pedido/Pedido offline</code></td></tr>
+  </tbody>
+</table>
+</div>
+<div class="callout tip">
+  <strong>Primeira visita lenta</strong>
+  <p>Em modo dev o Next compila sob demanda. Se o container ficar em "Carregando…" na primeira vez, abra <code>localhost:3001</code> e <code>localhost:3002</code> uma vez e recarregue o 3000.</p>
+</div>
+
+<!-- ============ PASSO 8 ============ -->
+<h2 id="p8"><span class="num">10</span>Build de produção</h2>
+<div class="file" data-path="terminal" data-lang="sh"><script type="text/plain">
+npm run build
+npm start
+</script></div>
+<p class="note"><code>build</code> compila os três apps otimizados (precisa terminar sem erros). <code>start</code> sobe as versões compiladas nas mesmas portas. Repita o teste de integração em <code>localhost:3000</code>. Garante que a entrega funciona fora do modo de desenvolvimento.</p>
+
+<!-- ============ PASSO 9 ============ -->
+<h2 id="p9"><span class="num">11</span>README.md</h2>
+<div class="file" data-path="README.md" data-lang="markdown"><script type="text/plain">
+# Restaurante EBAC: Micro Frontends com Module Federation
+
+Sistema de pedidos dividido em três aplicações Next.js independentes, integradas em tempo de execução com **Webpack Module Federation**.
+
+| App | Papel | Porta | O que faz |
+| --- | --- | --- | --- |
+| `apps/container` | Host | 3000 | Página principal; carrega os dois micros |
+| `apps/cardapio` | Remote | 3001 | Lista de pratos com botão "Adicionar ao pedido". Expõe `./Cardapio` |
+| `apps/pedido` | Remote | 3002 | Itens adicionados, quantidades e total. Expõe `./Pedido` |
+
+## Arquitetura
+
+```mermaid
+flowchart TB
+  C["Container (host) :3000"]
+  CA["Micro Cardápio (remote) :3001"]
+  P["Micro Pedido (remote) :3002"]
+  W(("window"))
+  C -- "import('cardapio/Cardapio')" --> CA
+  C -- "import('pedido/Pedido')" --> P
+  CA -- "CustomEvent pedido:item-adicionado" --> W
+  W -- "addEventListener" --> P
+```
+
+## Tecnologias
+
+- Next.js 14.2 (**Pages Router**): o plugin de Module Federation suporta apenas Next 12 a 15 com Pages Router
+- React 18
+- `@module-federation/nextjs-mf` 8.8
+- Webpack 5.98 (travado via `overrides`; versões mais novas são incompatíveis com o plugin)
+- npm workspaces (monorepo)
+- CSS Modules
+
+## Como rodar
+
+Pré-requisito: Node.js 18.17 ou superior.
+
+```bash
+npm install      # instala as dependências dos três apps
+npm run dev      # sobe os três apps juntos
+```
+
+Acesse **http://localhost:3000**.
+
+### Rodar cada micro individualmente
+
+```bash
+npm run dev -w cardapio    # http://localhost:3001
+npm run dev -w pedido      # http://localhost:3002 (tem botão para simular eventos)
+npm run dev -w container   # http://localhost:3000 (precisa dos dois remotes rodando)
+```
+
+### Produção
+
+```bash
+npm run build
+npm start
+```
+
+## Como funciona a comunicação entre os micros
+
+Os micros **não importam código um do outro**. Eles se comunicam por um evento global do navegador, seguindo um contrato definido em `events/pedidoEvents.js` (o mesmo arquivo nos dois micros):
+
+| Evento | Emissor | Ouvinte | Payload (`event.detail`) |
+| --- | --- | --- | --- |
+| `pedido:item-adicionado` | Cardápio | Pedido | `{ id: string, nome: string, preco: number }` |
+
+1. O usuário clica em "Adicionar ao pedido" no Cardápio.
+2. O Cardápio chama `window.dispatchEvent(new CustomEvent('pedido:item-adicionado', { detail }))`.
+3. O hook `usePedido` do Pedido escuta o evento com `window.addEventListener` e atualiza o estado (o mesmo prato aumenta a quantidade).
+4. O listener é removido no cleanup do `useEffect`, evitando duplicidade.
+
+Como o único acordo é o nome do evento e o formato do payload, cada micro pode ser alterado e publicado sem mexer no outro.
+
+## Como o Module Federation está configurado
+
+- **Remotes** (`apps/cardapio` e `apps/pedido`): `NextFederationPlugin` com `name`, `filename: 'static/chunks/remoteEntry.js'` e `exposes`.
+- **Host** (`apps/container`): `NextFederationPlugin` com `remotes` apontando para o `remoteEntry.js` de cada micro (`ssr` no servidor, `chunks` no navegador).
+- O container carrega os micros com `React.lazy` + `Suspense`, apenas no navegador, e envolve cada um num Error Boundary.
+- React e React DOM são compartilhados como singleton pelo próprio plugin.
+
+## Estrutura
+
+```
+apps/
+├── cardapio/   components/ data/ events/ pages/ styles/
+├── pedido/     components/ hooks/ events/ pages/ styles/
+└── container/  components/ pages/ styles/
+```
+</script></div>
+<p class="note">Atende ao entregável: explica como rodar cada micro e como funciona a comunicação. O diagrama em Mermaid é renderizado automaticamente pelo GitHub.</p>
+
+<!-- ============ PASSO 10 ============ -->
+<h2 id="p10"><span class="num">12</span>Publicar no GitHub</h2>
+<p>Crie um repositório <b>vazio e público</b> em <a href="https://github.com/new" target="_blank" rel="noopener">github.com/new</a> (sem README, sem .gitignore). Depois, na raiz do projeto:</p>
+<div class="file" data-path="terminal" data-lang="sh"><script type="text/plain">
+git init
+git add .
+git commit -m "feat: sistema de pedidos com micro frontends e module federation"
+git branch -M main
+git remote add origin https://github.com/SEU-USUARIO/ebac-frontend-microfrontends.git
+git push -u origin main
+</script></div>
+<ul class="note">
+  <li><b>git init</b>: transforma a pasta num repositório git.</li>
+  <li><b>git add . / commit</b>: registra todos os arquivos (exceto os do <code>.gitignore</code>).</li>
+  <li><b>branch -M main</b>: nomeia a branch principal como <code>main</code>.</li>
+  <li><b>remote add / push</b>: liga ao repositório do GitHub e envia. Troque <code>SEU-USUARIO</code> pelo seu usuário.</li>
+</ul>
+<div class="callout info">
+  <strong>Pasta docs/</strong>
+  <p>A pasta <code>docs/</code> (material de estudo) e o <code>CLAUDE.md</code> também vão para o repositório. Se não quiser publicá-los, adicione <code>docs/</code> e <code>CLAUDE.md</code> ao <code>.gitignore</code> antes do <code>git add .</code>.</p>
+</div>
+<p>Confira no GitHub se o README aparece com o diagrama renderizado e envie o link na plataforma da EBAC.</p>
+
+<!-- ============ PROBLEMAS ============ -->
+<h2 id="problemas"><span class="num">13</span>Problemas comuns</h2>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Erro / sintoma</th><th>Causa</th><th>Solução</th></tr></thead>
+  <tbody>
+    <tr><td><code>Cannot find module '...webpack\lib\util\extractUrlAndGlobal'</code></td><td>webpack 5.112 ou mais novo instalado</td><td>Confira o <code>overrides</code> no package.json da raiz; apague <code>node_modules</code> e <code>package-lock.json</code> e rode <code>npm install</code></td></tr>
+    <tr><td><code>_resolveContext_stack.delete is not a function</code></td><td>enhanced-resolve muito novo</td><td>Mesmo procedimento: <code>"enhanced-resolve": "5.18.3"</code> no <code>overrides</code> e reinstalar</td></tr>
+    <tr><td><code>Invalid hook call</code></td><td>Duas cópias do React (versões diferentes entre apps)</td><td>Use exatamente <code>react@18.3.1</code> nos três <code>package.json</code> e reinstale</td></tr>
+    <tr><td><code>Module not found: Can't resolve 'cardapio/Cardapio'</code></td><td>Nome do remote ou do módulo exposto diferente</td><td><code>name</code> no remote, chave em <code>remotes</code> e <code>exposes</code> precisam bater exatamente</td></tr>
+    <tr><td>Container fica em "Carregando…" ou área vazia</td><td>Remote não está rodando ou ainda não compilou</td><td>Abra 3001 e 3002 no navegador, depois recarregue 3000. Veja o console: <code>offline</code> indica remote fora do ar</td></tr>
+    <tr><td>Item entra duplicado no pedido</td><td>Listener sem cleanup</td><td>Confira o <code>return () =&gt; window.removeEventListener(...)</code> no <code>usePedido</code></td></tr>
+    <tr><td>Clico e o pedido não atualiza</td><td>Nome do evento diferente entre os micros</td><td>Os dois <code>events/pedidoEvents.js</code> devem ser idênticos</td></tr>
+    <tr><td><code>EADDRINUSE: address already in use :::3000</code></td><td>Porta já ocupada</td><td>Feche o terminal antigo (<kbd>Ctrl</kbd>+<kbd>C</kbd>) ou reinicie o VS Code</td></tr>
+    <tr><td><code>'NEXT_PRIVATE_LOCAL_WEBPACK' não é reconhecido</code></td><td>Faltou o <code>cross-env</code> no script</td><td>Scripts devem começar com <code>cross-env NEXT_PRIVATE_LOCAL_WEBPACK=true</code></td></tr>
+  </tbody>
+</table>
+</div>
+
+<!-- ============ CHECKLIST ============ -->
+<h2 id="checklist"><span class="num">14</span>Checklist final de entrega</h2>
+<p><span class="progress" id="progress"></span></p>
+<ul class="checklist" id="checklist">
+  <li><label><input type="checkbox" data-k="c1"><span>Três apps em <code>apps/container</code>, <code>apps/cardapio</code> e <code>apps/pedido</code></span></label></li>
+  <li><label><input type="checkbox" data-k="c2"><span>Next 14 com Pages Router em todos (nenhuma pasta <code>app/</code>)</span></label></li>
+  <li><label><input type="checkbox" data-k="c3"><span><code>remoteEntry.js</code> responde em 3001 e 3002</span></label></li>
+  <li><label><input type="checkbox" data-k="c4"><span>Container exibe os dois micros com <code>React.lazy</code> + <code>Suspense</code></span></label></li>
+  <li><label><input type="checkbox" data-k="c5"><span>Adicionar prato no Cardápio atualiza o Pedido (sem duplicar)</span></label></li>
+  <li><label><input type="checkbox" data-k="c6"><span>Cada micro funciona sozinho (3001 e 3002)</span></label></li>
+  <li><label><input type="checkbox" data-k="c7"><span>Layout ok em celular (375px) e desktop</span></label></li>
+  <li><label><input type="checkbox" data-k="c8"><span><code>npm run build</code> termina sem erros</span></label></li>
+  <li><label><input type="checkbox" data-k="c9"><span>README explica como rodar cada micro e a comunicação</span></label></li>
+  <li><label><input type="checkbox" data-k="c10"><span>Repositório público no GitHub, sem <code>node_modules</code> e <code>.next</code></span></label></li>
+  <li><label><input type="checkbox" data-k="c11"><span>Link enviado na plataforma da EBAC</span></label></li>
+</ul>
+
+<footer>Aula prática · Micro Frontends com Module Federation · gerada a partir de <code>docs/plan.json</code>. Versões testadas em 24/10/2026.</footer>
+</div>
+
+<script>
+  // Transforma cada bloco .file em cabeçalho (caminho + Copiar) + código
+  document.querySelectorAll('.file').forEach(function (box) {
+    var src = box.querySelector('script[type="text/plain"]');
+    var code = src.textContent.replace(/^\n/, '').replace(/\s+$/, '') + '\n';
+    var path = box.dataset.path;
+    var isTerminal = path === 'terminal';
+
+    var head = document.createElement('div');
+    head.className = 'file-head';
+    var label = document.createElement('span');
+    label.innerHTML = (isTerminal ? '<span class="tag">$</span>' : '<span class="tag">📄</span>') + path.replace(/</g, '&lt;');
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy';
+    btn.textContent = 'Copiar';
+    btn.addEventListener('click', function () {
+      function ok() { btn.textContent = 'Copiado!'; btn.classList.add('done'); setTimeout(function () { btn.textContent = 'Copiar'; btn.classList.remove('done'); }, 1500); }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(code).then(ok, fallback);
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = code; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); ok(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+    head.appendChild(label);
+    head.appendChild(btn);
+
+    var pre = document.createElement('pre');
+    var el = document.createElement('code');
+    el.textContent = code;
+    pre.appendChild(el);
+
+    box.replaceChildren(head, pre);
+  });
+
+  // Checklist com progresso salvo no navegador
+  (function () {
+    var KEY = 'aula-pratica-mf-checklist';
+    var boxes = document.querySelectorAll('#checklist input[type="checkbox"]');
+    var progress = document.getElementById('progress');
+    var saved = {};
+    try { saved = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { saved = {}; }
+    function update() {
+      var done = 0;
+      boxes.forEach(function (b) { if (b.checked) done++; });
+      progress.textContent = done + ' de ' + boxes.length + ' concluídos';
+    }
+    boxes.forEach(function (b) {
+      b.checked = !!saved[b.dataset.k];
+      b.addEventListener('change', function () {
+        saved[b.dataset.k] = b.checked;
+        try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+        update();
+      });
+    });
+    update();
+  })();
+</script>
+</body>
+</html>

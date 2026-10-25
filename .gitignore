@@ -1,0 +1,9 @@
+node_modules/
+.next/
+out/
+*.log
+.env*.local
+.DS_Store
+CLAUDE.md
+docs/plan.json
+docs/task.html
